@@ -405,9 +405,9 @@ CREATE TABLE `Delivery_Partner` (
   `partner_contact_no` varchar(12) NOT NULL,
   `orders_completed` INT NOT NULL,
   `partner_rating` double DEFAULT 0,
-  `partner_salary` INT DEFAULT 0,
+  `partner_salary` INT DEFAULT 9999,
   
-  CONSTRAINT salary CHECK (partner_salary > 0),
+  CONSTRAINT salary CHECK (partner_salary > 9999),
   CONSTRAINT rating CHECK (partner_rating > 1),
   PRIMARY KEY (partner_id)
 );
