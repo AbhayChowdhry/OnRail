@@ -47,7 +47,7 @@ WHERE dp.partner_rating >= 7 AND dp.orders_completed >= 15
 ORDER BY dp.partner_id
 LIMIT 10;
 
--- Query 4 for Sellers 
+-- Query 4 for Sellers with Low Product Rating to Reduce their commission by 5%
 USE online_retail_store;
 
 SELECT 
