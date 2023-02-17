@@ -108,7 +108,7 @@ WHERE
 ORDER BY 
 	c.customer_id;
 	
--- Query 7 To To conduct Double checks on Electronic Cateogry Products By Setting minimum bounds on product ratings
+-- Query 7: To conduct Double checks on Electronic Cateogry Products By Setting minimum bounds on product ratings
 USE online_retail_store;
 
 SELECT 
@@ -125,3 +125,43 @@ WHERE
 	p.product_rating > 7 AND c.category_name = "Electronics and Gadgets" 
 ORDER BY 
 	p.product_rating;
+
+-- Query 8: To check constraints on the tables Cart and Delivery Partner
+USE online_retail_store;
+
+SELECT 
+	CONSTRAINT_NAME, 
+	CONSTRAINT_TYPE
+FROM
+	INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_NAME = 'Cart' OR TABLE_NAME = 'Delivery_Partner';
+
+-- Query 9: To get the total number of products ordered by a Customer
+USE online_retail_store;
+
+SELECT 
+	oi.customer_id,
+    c.customer_name,
+    count(*) AS "Quantity Ordered" 
+FROM order_items oi
+LEFT JOIN 
+	product p ON p.product_id = oi.product_id
+LEFT JOIN
+	customers c ON oi.customer_id = c.customer_id
+GROUP BY 
+	oi.customer_id;
+
+-- Query 10: Update Order Value
+USE online_retail_store;
+
+UPDATE order_payment op
+INNER JOIN(
+SELECT 
+	oi.order_id,
+    oi.customer_id AS "Customer ID",
+    round(sum(p.product_price * oi.quantity_added), 2) AS Order_Value
+FROM order_items oi, product p
+WHERE oi.product_id = p.product_id
+GROUP BY order_id, customer_id) AS o1
+ON op.order_id = o1.order_id
+SET op.order_value = o1.Order_Value;
