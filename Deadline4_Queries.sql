@@ -165,3 +165,24 @@ WHERE oi.product_id = p.product_id
 GROUP BY order_id, customer_id) AS o1
 ON op.order_id = o1.order_id
 SET op.order_value = o1.Order_Value;
+
+-- Query 11: As per recent enhanced quality checks, Query 11 hikes the price of the best performing electronics by 20%
+USE online_retail_store;
+
+UPDATE product
+SET product_price = (product_price)*6/5
+WHERE product_rating > 8 AND category_id = 1;
+
+-- Query 12: As a token of appreciation, OnRail increases the Salary of best rating Partners by 6.5%, inflation doesnt seem so bad now ;)
+USE online_retail_store;
+
+UPDATE delivery_partner
+SET partner_salary = (partner_salary)*106.5/100
+WHERE partner_rating > 8;
+
+-- Query 13: Because of Exceptionally high demands of product_id = 43, 56 and 98, they just went out of stock! :(
+USE online_retail_store;
+
+UPDATE inventory
+SET quantity_in_stock = 1
+WHERE product_id IN (43, 56, 98);
