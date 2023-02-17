@@ -241,14 +241,17 @@ SELECT
 FROM order_items oi
 JOIN cart c
 USING (customer_id)
-ORDER BY oi.order_id
+ORDER BY oi.order_id;
 
 -- Query 18: Deleting and Inserting Products with Queries
 USE online_retail_store;
+
+DELETE FROM product
+WHERE product_id = 99;
 
 DELETE FROM product
 WHERE product_id = 100;
 
 INSERT INTO product 
 	(product_id, product_name, product_price, seller_id, category_id, product_rating)
-insert into values (100, 'Vibrator', 69, 2, 1, 10);
+values (99, 'xyz', 69, 2, 1, 10);
