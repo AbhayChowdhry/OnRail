@@ -151,7 +151,7 @@ LEFT JOIN
 GROUP BY 
 	oi.customer_id;
 
--- Query 10: Update Order Value
+-- Query 10: Update Order Value in the Order Payments Table
 USE online_retail_store;
 
 UPDATE order_payment op
@@ -165,6 +165,9 @@ WHERE oi.product_id = p.product_id
 GROUP BY order_id, customer_id) AS o1
 ON op.order_id = o1.order_id
 SET op.order_value = o1.Order_Value;
+
+SELECT *
+FROM order_payment op;
 
 -- Query 11: As per recent enhanced quality checks, Query 11 hikes the price of the best performing electronics by 20%
 USE online_retail_store;
@@ -186,3 +189,56 @@ USE online_retail_store;
 UPDATE inventory
 SET quantity_in_stock = 1
 WHERE product_id IN (43, 56, 98);
+
+-- Query 14: To show Customers who have an empty cart
+USE online_retail_store;
+
+SELECT 
+	c.customer_id,
+    c.customer_name,
+    c.phone_no,
+    0 AS 'Quantity in Cart'
+FROM 
+	customers c
+LEFT JOIN
+	cart ca ON c.customer_id = ca.customer_id
+WHERE
+	ca.product_quantity IS NULL
+GROUP BY
+	c.customer_id;
+
+-- Query 15: Show number of products in different categories
+USE online_retail_store;
+
+SELECT 
+	c.category_id,
+    c.category_name,
+    count(*) AS 'Number of Products' 
+FROM 
+	category c
+LEFT JOIN 
+	product p ON p.category_id = c.category_id
+GROUP BY
+	c.category_id;
+	
+-- Query 16: Printing orders which are not paid or which are paid and not delivered
+USE online_retail_store;
+
+SELECT *
+FROM order_payment op
+WHERE op.status = 1 OR op.status = 0
+ORDER BY op.order_id;
+
+-- Query 17: Join with 'USING' clause
+USE online_retail_store;
+
+SELECT 
+	oi.order_id,
+    oi.customer_id,
+    oi.product_id,
+    c.product_quantity,
+    oi.partner_id
+FROM order_items oi
+JOIN cart c
+USING (customer_id)
+ORDER BY oi.order_id
