@@ -407,8 +407,8 @@ CREATE TABLE `Delivery_Partner` (
   `partner_rating` double DEFAULT 0,
   `partner_salary` INT DEFAULT 9999,
   
-  CONSTRAINT salary CHECK (partner_salary > 9999),
-  CONSTRAINT rating CHECK (partner_rating > 1),
+  CONSTRAINT salary CHECK (partner_salary > 9998),
+  CONSTRAINT rating CHECK (partner_rating > -1),
   PRIMARY KEY (partner_id)
 );
 
@@ -875,4 +875,3 @@ insert into Inventory (product_id, quantity_in_stock) values (97, 61);
 insert into Inventory (product_id, quantity_in_stock) values (98, 69);
 insert into Inventory (product_id, quantity_in_stock) values (99, 46);
 insert into Inventory (product_id, quantity_in_stock) values (100, 81);
-
