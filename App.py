@@ -49,8 +49,6 @@ def main():
                 print("Welcome!")
                 # Seller
 
-
-
         # if the user chose to login
         elif choice == 2:
             print("Login")
@@ -62,8 +60,57 @@ def main():
             choice_one = int(input("Enter your choice: "))
 
             if choice_one == 1:
-               # Customer
-               print("Welcome!")
+                # Customer
+                print("Welcome!")
+                # LOGIN
+
+                while(True):
+                    print("Choose a category: ")
+                    print("1. Electronics and Gadgets")
+                    print("2. Home and Kitchen")
+                    print("3. Beauty and Personal Care")
+                    print("4. Toys and Games")
+                    print("5. Books and Office Supplies")
+                    print("6. Sports and Fitness")
+                    print("7. Clothing and Accessories")
+                    choice_two = int(input("Enter your choice: "))
+                    
+                    if choice_two == 1:
+                        category = "Electronics and Gadgets"                
+                        break
+                    elif choice_two == 2:
+                        category = "Home and Kitchen"
+                        break
+                    elif choice_two == 3:
+                        category = "Beauty and Personal Care"
+                        break
+                    elif choice_two == 4:
+                        category = "Toys and Games"
+                        break
+                    elif choice_two == 5:
+                        category = "Books and Office Supplies"
+                        break
+                    elif choice_two == 6:
+                        category = "Sports and Fitness"
+                        break
+                    elif choice_two == 7:
+                        category = "Clothing and Accessories"
+                        break
+                    else:
+                        print("Invalid choice")
+
+                #input desired rating out of 10 filter
+                rating = float(input("Enter the minimum rating you want: "))
+
+                #input desired price filter
+                price = float(input("Enter the maximum price you want: "))
+
+                # create a query to get the products
+                query = "SELECT * FROM PRODUCTS WHERE category = %s AND rating >= %s AND price <= %s"                  
+                vals = (category, rating, price)
+                cursor.execute(query, vals)
+                products = cursor.fetchall()
+
             elif choice_one == 2:
                 print("Welcome!")
                 # Admin
@@ -75,7 +122,6 @@ def main():
                 # Seller
 
             # CHECK IF USER EXISTS IN DATABASE HERE AND IF PASSWORD IS CORRECT and TRIGGER
-
 
         # if the user wants to exit the app
         elif choice == 3:
