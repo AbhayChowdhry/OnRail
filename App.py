@@ -1,8 +1,9 @@
 import mysql.connector
+import pandas as pd
 
 def main():
     # Connect to the database
-    db = mysql.connector.connect(user='root', password='idonthaveanewpassword@1234',
+    db = mysql.connector.connect(user='root', password='Dbm5_098',
                                 host='localhost', database='Online_Retail_Store')
     cursor = db.cursor()
 
@@ -34,6 +35,7 @@ def main():
                 email = input("Enter your email-ID: ")
                 password = input("Make a strong password for your account: ")
                 sql_query = "insert into Customers (customer_name, phone_no, address, customer_password, email_id) values (%s, %s, %s, %s, %s);"
+
                 vals = (name, phone_no, address, password, email)
                 cursor.execute(sql_query, vals)
                 db.commit()
@@ -135,26 +137,7 @@ def main():
                             print("7. Clothing and Accessories")
                             choice_two = int(input("Enter your choice: "))
                             
-                            if choice_two == 1:
-                                category = "Electronics and Gadgets"                
-                                break
-                            elif choice_two == 2:
-                                category = "Home and Kitchen"
-                                break
-                            elif choice_two == 3:
-                                category = "Beauty and Personal Care"
-                                break
-                            elif choice_two == 4:
-                                category = "Toys and Games"
-                                break
-                            elif choice_two == 5:
-                                category = "Books and Office Supplies"
-                                break
-                            elif choice_two == 6:
-                                category = "Sports and Fitness"
-                                break
-                            elif choice_two == 7:
-                                category = "Clothing and Accessories"
+                            if choice_two in [1, 2, 3, 4, 5, 6, 7]:
                                 break
                             else:
                                 print("Invalid choice")
@@ -165,15 +148,16 @@ def main():
                         price = float(input("Enter the maximum price you want: "))
 
                         # create a query to get the products
-                        query = "SELECT * FROM PRODUCTS WHERE category = %s AND rating >= %s AND price <= %s"                  
-                        vals = (category, rating, price)
-                        try:
-                            cursor.execute(query, vals)
-                        except:
-                            print("Invalid Choice")
+                        query = "SELECT * FROM PRODUCT WHERE category_id = %s AND product_rating >= %s AND product_price <= %s"                  
+                        vals = (choice_two, rating, price)
+                        cursor.execute(query, vals)
                         products = cursor.fetchall()
-                        for i in products:
-                            print(i)
+ 
+                        df = pd.DataFrame(products, columns = ['Product ID', 'Product Name', 'Price', 'Seller ID', 'Category ID', 'Product Rating'])
+
+                        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                            print(df)
+
                     else:
                         print("Wrong Password")
 
