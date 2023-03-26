@@ -12,9 +12,99 @@ def main():
         print("1. Sign Up")
         print("2. Log In")
         print("3. Exit")
+        print("4. Triggers Example")
 
         # get the user's choice
         choice = int(input("Enter your choice: "))
+
+        if choice == 4:
+            while(True):
+                print("0. Show products")
+                print("1. Show cart list")
+                print("2. Show order_items")
+                print("3. Show inventory")
+                print("4. Add product")
+                print("5. Add order_item")
+                print("6. Exit")
+
+                choice = int(input("Enter your choice: "))
+                if choice == 0:
+                    query = "SELECT * FROM PRODUCT"
+                    cursor.execute(query)
+                    product = cursor.fetchall()
+
+                    df = pd.DataFrame(product, columns = ['Product ID', 'Product Name', 'Product Price', 'Seller ID', 'Product Category', 'Product Rating'])
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        print(df)
+
+                if choice == 1:
+                    query = "SELECT * FROM CART"
+                    cursor.execute(query)
+                    cart = cursor.fetchall()
+ 
+                    df = pd.DataFrame(cart, columns = ['Customer ID', 'Product ID', 'Quantity'])
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        print(df)
+
+                elif choice == 2:
+                    query = "SELECT * FROM ORDER_ITEMS"
+                    cursor.execute(query)
+                    
+                    order_items = cursor.fetchall()
+                    df = pd.DataFrame(order_items, columns = ['Order ID', 'Customer ID', 'Product ID', 'Quantity', 'Partner ID'])
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        print(df)
+
+                elif choice == 3:
+                    query = "SELECT * FROM INVENTORY"
+                    cursor.execute(query)
+                    
+                    inventory = cursor.fetchall()
+                    df = pd.DataFrame(inventory, columns = ['Product ID', 'Quantity'])
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        print(df)
+                
+                elif choice == 4:
+
+                    # get value of last product_id
+                    query = "SELECT * FROM PRODUCT"
+                    cursor.execute(query)
+                    product_id = cursor.fetchall()[-1][0] + 1
+
+                    print("Enter the following details: ")
+                    product_name = input("Enter product_name: ")
+                    product_price = int(input("Enter product_price: "))
+                    seller_id = int(input("Enter seller_id: "))
+                    product_category = input("Enter product_category: ")
+                    product_rating = int(input("Enter product_rating: "))
+       
+                    query = "insert into Product (product_id, product_name, product_price, seller_id, category_id, product_rating) values (%s, %s, %s, %s, %s, %s);"
+                    vals = (product_id, product_name, product_price, seller_id, product_category, product_rating)
+                    cursor.execute(query, vals)
+                    db.commit()
+
+                    print("Successfully added product")
+
+                elif choice == 5:
+                    # get value of last order_id
+                    query = "SELECT * FROM ORDER_ITEMS"
+                    cursor.execute(query)
+                    order_id = cursor.fetchall()[-1][0] + 1
+
+                    print("Enter the following details: ")
+                    customer_id = int(input("Enter customer_id: "))
+                    product_id = int(input("Enter product_id: "))
+                    quantity_added = int(input("Enter quantity_added: "))
+                    partner_id = int(input("Enter partner_id: "))
+                    query = "insert into Order_items (order_id, customer_id, product_id, quantity_added, partner_id) values (%s, %s, %s, %s, %s);"
+                    vals = (order_id, customer_id, product_id, quantity_added, partner_id)
+                    cursor.execute(query, vals)
+                    db.commit()
+                    print("Successfully added order_item")
+
+                elif choice == 6:
+                    break
+            
 
         # if the user wants to Sign Up!
         if choice == 1:
