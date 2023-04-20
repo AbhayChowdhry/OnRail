@@ -1,10 +1,15 @@
 import mysql.connector
 import pandas as pd
+import datetime 
 
 def main():
     # Connect to the database
-    db = mysql.connector.connect(user='root', password='idonthaveanewpassword@1234',
+    db = mysql.connector.connect(user='root', password='Dbm5_098',
                                 host='localhost', database='Online_Retail_Store')
+    
+    # abhay password : Dbm5_098
+    # arnav password : idonthaveanewpassword@1234
+    
     cursor = db.cursor()
 
     while True:
@@ -124,41 +129,218 @@ def main():
                     print("Invalid Customer ID")
                 else:
                     if(correct_pass == password):
-                        print(f"Welcome {name}")        
-                            
-                        # Choose Category
-                        while(True):
-                            print("Choose a category: ")
-                            print("1. Electronics and Gadgets")
-                            print("2. Home and Kitchen")
-                            print("3. Beauty and Personal Care")
-                            print("4. Toys and Games")
-                            print("5. Books and Office Supplies")
-                            print("6. Sports and Fitness")
-                            print("7. Clothing and Accessories")
-                            choice_two = int(input("Enter your choice: "))
-                            
-                            if choice_two in [1, 2, 3, 4, 5, 6, 7]:
-                                break
-                            else:
-                                print("Invalid choice")
+                        print(f"Welcome {name}")   
+                        print("Choose one of the following: ")
+                        print("1. View Products")
+                        print("2. View Cart")
+                        print("3. Place Order")
+                        print("4. Exit")
 
-                        rating = float(input("Enter the minimum rating you want: "))
+                        choice_two = int(input("Enter your choice: "))
+                        
+                        # if choice_two == 1:
+                        if(choice_two == 1):
+                            while(True):
+                                print("Choose a category: ")
+                                print("1. Electronics and Gadgets")
+                                print("2. Home and Kitchen")
+                                print("3. Beauty and Personal Care")
+                                print("4. Toys and Games")
+                                print("5. Books and Office Supplies")
+                                print("6. Sports and Fitness")
+                                print("7. Clothing and Accessories")
+                                choice_two = int(input("Enter your choice: "))
+                                
+                                if choice_two in [1, 2, 3, 4, 5, 6, 7]:
+                                    break
+                                else:
+                                    print("Invalid choice")
 
-                        #input desired price filter
-                        price = float(input("Enter the maximum price you want: "))
+                            rating = float(input("Enter the minimum rating you want: "))
 
-                        # create a query to get the products
-                        query = "SELECT * FROM PRODUCT WHERE category_id = %s AND product_rating >= %s AND product_price <= %s"                  
-                        vals = (choice_two, rating, price)
-                        cursor.execute(query, vals)
-                        products = cursor.fetchall()
- 
-                        df = pd.DataFrame(products, columns = ['Product ID', 'Product Name', 'Price', 'Seller ID', 'Category ID', 'Product Rating'])
+                            #input desired price filter
+                            price = float(input("Enter the maximum price you want: "))
 
-                        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                            print(df)
+                            # create a query to get the products
+                            query = "SELECT * FROM PRODUCT WHERE category_id = %s AND product_rating >= %s AND product_price <= %s"                  
+                            vals = (choice_two, rating, price)
+                            cursor.execute(query, vals)
+                            products = cursor.fetchall()
+    
+                            df = pd.DataFrame(products, columns = ['Product ID', 'Product Name', 'Price', 'Seller ID', 'Category ID', 'Product Rating'])
 
+                            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                                print(df)
+
+                            # add to cart
+                            while(True):
+                                # do you want to add a product to cart
+                                print("Do you want to add a product to cart?")
+                                print("1. Yes")
+                                print("2. No")
+                                choice_three = int(input("Enter your choice: "))
+                                if choice_three == 1:
+                                    choice_three = int(input("Enter the Product ID of the product you want to add to cart: "))
+
+                                    # check quantity of product in Inventory (product_id, quantity_in_stock)
+                                    query = "SELECT * FROM INVENTORY WHERE product_id = %s"
+                                    vals = (choice_three,)
+                                    cursor.execute(query, vals)
+                                    product = cursor.fetchall()
+
+                                    if(len(product) == 0):
+                                        print("Invalid Product ID")
+                                    else:
+                                        # enter quantity
+                                        quantity = int(input("Enter the quantity of the product you want to add to cart: "))
+                                        if(quantity > product[0][1]):
+                                            print("Not enough quantity in stock")                                       
+
+                                        else:
+                                            query = "insert into Cart (customer_id, product_id, product_quantity) values (%s, %s, %s);"
+                                            vals = (id, choice_three, quantity)
+                                            cursor.execute(query, vals)
+                                            db.commit()
+
+                                            print("Product added to cart")
+                                            break
+
+                                elif choice_three == 2:
+                                    break
+
+                        # if choice_two == 2:
+                        elif(choice_two == 2):
+                            query = "SELECT * FROM CART WHERE customer_id = %s"
+                            vals = (id,)
+                            cursor.execute(query, vals)
+                            cart = cursor.fetchall()
+                            print("your cart is:")
+                            df = pd.DataFrame(cart, columns = ['Customer ID', 'Product ID', 'Quantity'])
+                            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                                print(df)
+
+                        # if choice_two == 3:
+                        elif(choice_two == 3):
+                            query = "SELECT * FROM CART WHERE customer_id = %s"
+                            vals = (id,)
+                            cursor.execute(query, vals)
+                            cart = cursor.fetchall()
+                            print("your cart is:")
+                            df = pd.DataFrame(cart, columns = ['Customer ID', 'Product ID', 'Quantity'])
+                            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                                print(df)
+
+                            # do you want something from cart
+                            print("Do you want to remove a product from cart?")
+                            print("1. Yes")
+                            print("2. No")
+                            choice_three = int(input("Enter your choice: "))
+                            if choice_three == 1:
+
+                                # input the product id of the product to be removed
+                                choice_three = int(input("Enter the Product ID of the product you want to remove from cart: "))
+                                query = "DELETE FROM CART WHERE customer_id = %s AND product_id = %s"
+                                vals = (id, choice_three)
+                                cursor.execute(query, vals)
+                                db.commit()
+
+                                print("Product removed from cart")
+
+                            print("Do you want to confirm the order?")
+                            print("1. Yes")
+                            print("2. No")
+                            choice_four = int(input("Enter your choice: "))
+                            if choice_four == 1:
+
+                                # get all iterms in cart
+                                query = "SELECT * FROM CART WHERE customer_id = %s"
+                                vals = (id,)
+                                cursor.execute(query, vals)
+                                cart = cursor.fetchall()
+                                
+                                # get the total price of the order
+                                total_price = 0
+                                for item in cart:
+                                    query = "SELECT * FROM PRODUCT WHERE product_id = %s"
+                                    vals = (item[1],)
+                                    cursor.execute(query, vals)
+                                    product = cursor.fetchall()
+                                    total_price += product[0][2] * item[2]
+                                    
+                                # payment
+                                print("Total price of the order is: ", total_price)
+                                print("Enter your payment details: ")
+                                print("1. UPI")
+                                print("2. Credit Card")
+                                print("3. Debit Card")
+                                print("4. Net Banking")
+                                print("5. Cash on Delivery")
+                                choice_five = int(input("Enter your choice: "))
+                                if choice_five == 1:
+                                    payment_method = "UPI"
+                                elif choice_five == 2:
+                                    payment_method = "Credit Card"
+                                elif choice_five == 3:
+                                    payment_method = "Debit Card"
+                                elif choice_five == 4:
+                                    payment_method = "Net Banking"
+                                elif choice_five == 5:
+                                    payment_method = "Cash on Delivery"
+
+                                print("Rs. ", total_price, " has been deducted from your ", payment_method, " account.")
+
+                                # add to order_items while assigning a unique order_id and new partner id
+                                query = "SELECT MAX(order_id) FROM ORDER_ITEMS"
+                                cursor.execute(query)
+                                order_id = cursor.fetchall()[0][0] + 1
+                                for item in cart:
+                                    query = "SELECT MAX(partner_id) FROM ORDER_ITEMS"
+                                    cursor.execute(query)
+                                    partner_id = cursor.fetchall()[0][0] + 1
+                                    query = "INSERT INTO ORDER_ITEMS (order_id, customer_id, product_id, quantity_added, partner_id) VALUES (%s, %s, %s, %s, %s)"
+                                    vals = (order_id, id, item[1], item[2], partner_id)
+                                    cursor.execute(query, vals)
+                                    db.commit()
+
+                                # get cusomter address
+                                query = "SELECT * FROM CUSTOMERs WHERE customer_id = %s"
+                                vals = (id,)
+                                cursor.execute(query, vals)
+                                customer = cursor.fetchall()
+                                address = customer[0][3]
+
+                                # for all elements in cart, reduce the quantity in Inventory
+                                for item in cart:
+                                    query = "SELECT * FROM INVENTORY WHERE product_id = %s"
+                                    vals = (item[1],)
+                                    cursor.execute(query, vals)
+                                    inventory = cursor.fetchall()
+                                    query = "UPDATE INVENTORY SET quantity_in_stock = %s WHERE product_id = %s"
+                                    vals = (inventory[0][1] - item[2], item[1])
+                                    cursor.execute(query, vals)
+                                    db.commit()                        
+
+                                # add to order_payment insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (6, 6, 2, '20124 Derek Terrace', 6971, '2023-01-15 18:57:24', 0);
+                                query = "INSERT INTO ORDER_PAYMENT (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                                vals = (order_id, id, payment_method, address, total_price, datetime.datetime.now(), 0)
+                                cursor.execute(query, vals)
+                                db.commit()
+
+                                # remove from cart
+                                query = "DELETE FROM CART WHERE customer_id = %s"
+                                vals = (id,)
+                                cursor.execute(query, vals)
+                                db.commit()
+
+                                print("Order confirmed")
+                                
+                            elif choice_four == 2:
+                                print("Order cancelled")
+
+                        # if choice_two == 4:
+                        elif(choice_two == 4):
+                            break
+                        
                     else:
                         print("Wrong Password")
 
@@ -292,7 +474,22 @@ def main():
 
             # Delivery Partner
             elif choice_one == 3:
-                print("Welcome!")
+                id = int(input("Enter your Unique Partner ID: "))
+                query = "SELECT * FROM Delivery_Partner"
+                cursor.execute(query)
+                flag = 0
+                for row in cursor.fetchall():
+                    if(row[0] == id):
+                        name = row[1]
+                        flag = 1
+                        rating = row[4]
+                        break
+                
+                if(flag == 0):
+                    print("Invalid Partner ID")
+                else:
+                    print(f'Welcome {name}') 
+                           
             
             # Seller
             elif choice_one == 4:
