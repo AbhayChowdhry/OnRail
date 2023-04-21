@@ -914,4 +914,4 @@ BEGIN
     UPDATE `Inventory` SET `quantity_in_stock` = `quantity_in_stock` - NEW.quantity_added
     WHERE `product_id` = NEW.product_id;
 END$$
-DELIMITER ;
+DELIMITER;
