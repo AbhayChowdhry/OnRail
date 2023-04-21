@@ -632,6 +632,7 @@ insert into Order_Items(order_id, customer_id, product_id, quantity_added, partn
 CREATE TABLE `Order_Payment` (
   `order_id` INT NOT NULL,
   `customer_id` INT NOT NULL,
+  `partner_id` INT NOT NULL,
   `payment_mode` enum('Cash', 'Credit Card', 'UPI/Wallet', 'Netbanking') NOT NULL,
   `shipping_address` varchar(60) NOT NULL,
   `order_value` decimal(9,2) NOT NULL DEFAULT '0.00',
@@ -639,21 +640,22 @@ CREATE TABLE `Order_Payment` (
   `status` INT NOT NULL,
   
   CONSTRAINT order_value CHECK (order_value > 0),
+  FOREIGN KEY (partner_id) REFERENCES delivery_partner(partner_id) ON UPDATE CASCADE ON DELETE CASCADE,
   FOREIGN KEY (order_id) REFERENCES order_items(order_id) ON UPDATE CASCADE ON DELETE CASCADE,
   FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON UPDATE CASCADE ON DELETE CASCADE,
   PRIMARY KEY (order_id, customer_id)
 );
 
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (1, 4, 3, '2567 Steensland Pass', 6228, '2022-02-12 06:18:37', 2);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (2, 2, 4, '8 Nelson Hill', 8322, '2022-04-24 00:52:50', 0);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (3, 1, 2, '4108 Nova Terrace', 2841, '2022-08-10 16:21:35', 1);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (4, 4, 2, '9087 Nelson Hill', 3216, '2022-08-01 05:31:13', 2);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (5, 7, 3, '53755 Dryden Hill', 5957, '2022-03-20 16:52:30', 1);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (6, 6, 2, '20124 Derek Terrace', 6971, '2023-01-15 18:57:24', 0);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (7, 7, 2, '0 Mccormick Court', 8147, '2022-08-23 20:27:37', 0);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (8, 8, 3, '80181 Chive Alley', 1435, '2022-10-09 07:35:13', 0);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (9, 9, 2, '0072 Sherman Hill', 1832, '2022-03-16 15:24:19', 1);
-insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (10, 1, 4, '238 Boyd Hill', 3851, '2022-07-01 16:53:47', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (1, 4, 1, 3, '2567 Steensland Pass', 6228, '2022-02-12 06:18:37', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (2, 2, 2, 4, '8 Nelson Hill', 8322, '2022-04-24 00:52:50', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (3, 1, 4, 2, '4108 Nova Terrace', 2841, '2022-08-10 16:21:35', 1);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (4, 4, 4, 2, '9087 Nelson Hill', 3216, '2022-08-01 05:31:13', 1);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (5, 7, 6, 3, '53755 Dryden Hill', 5957, '2022-03-20 16:52:30', 1);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (6, 6, 5, 2, '20124 Derek Terrace', 6971, '2023-01-15 18:57:24', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (7, 7, 7, 2, '0 Mccormick Court', 8147, '2022-08-23 20:27:37', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (8, 8, 8, 3, '80181 Chive Alley', 1435, '2022-10-09 07:35:13', 0);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (9, 9, 9, 2, '0072 Sherman Hill', 1832, '2022-03-16 15:24:19', 1);
+insert into Order_Payment (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) values (10, 1, 3, 4, '238 Boyd Hill', 3851, '2022-07-01 16:53:47', 0);
 
 CREATE TABLE `Cart` (
   `customer_id` INT NOT NULL,
@@ -875,3 +877,41 @@ insert into Inventory (product_id, quantity_in_stock) values (97, 61);
 insert into Inventory (product_id, quantity_in_stock) values (98, 69);
 insert into Inventory (product_id, quantity_in_stock) values (99, 46);
 insert into Inventory (product_id, quantity_in_stock) values (100, 81);
+
+-- Trigger 1: Empty Cart after Order is Placed
+USE online_retail_store;
+
+DELIMITER $$
+CREATE TRIGGER empty_cart 
+AFTER INSERT ON order_items
+FOR EACH ROW
+BEGIN
+    DELETE from Cart where customer_id = NEW.customer_id;
+END$$
+DELIMITER ;
+
+-- Trigger 2: Set Product Rating to 1 if it is less than 1
+USE online_retail_store;
+
+DELIMITER $$
+CREATE TRIGGER `update_rating` BEFORE INSERT ON `Product`
+FOR EACH ROW
+BEGIN
+    IF NEW.product_rating <= 0 THEN
+        SET NEW.product_rating = 1;
+    END IF;
+END$$
+DELIMITER ;
+
+-- Trigger 3: Reduce Inventory Quantity by the Quantity Added
+USE online_retail_store;
+
+DELIMITER $$
+CREATE TRIGGER `reduct_inventory` 
+AFTER INSERT ON `Order_Items`
+FOR EACH ROW
+BEGIN
+    UPDATE `Inventory` SET `quantity_in_stock` = `quantity_in_stock` - NEW.quantity_added
+    WHERE `product_id` = NEW.product_id;
+END$$
+DELIMITER ;
