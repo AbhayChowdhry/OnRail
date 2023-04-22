@@ -94,7 +94,7 @@ def place_order(customer_id, cart, payment_method, address, total_price):
             query_one  = "SELECT MAX(order_id) FROM ORDER_ITEMS"
             cursor.execute(query_one)
             order_id = cursor.fetchall()[0][0] + 1
-            print("here 1")
+
             for item in cart:
                 query = "SELECT (MAX(partner_id)%100)+1 FROM ORDER_ITEMS"
                 cursor.execute(query)
@@ -103,7 +103,6 @@ def place_order(customer_id, cart, payment_method, address, total_price):
                 vals = (order_id, customer_id, item[1], item[2], partner_id)
                 cursor.execute(query, vals)
             
-            print("here 2")
             # for all elements in cart, reduce the quantity in Inventory
             for item in cart:
                 query = "SELECT * FROM INVENTORY WHERE product_id = %s"
@@ -114,13 +113,11 @@ def place_order(customer_id, cart, payment_method, address, total_price):
                 vals = (inventory[0][1] - item[2], item[1])
                 cursor.execute(query, vals)
             
-            print("here 3")
             # add to order_payment insert into Order_Payment (order_id, customer_id, payment_mode, shipping_address, order_value, order_date, status) values (6, 6, 2, '20124 Derek Terrace', 6971, '2023-01-15 18:57:24', 0);
             query = "INSERT INTO ORDER_PAYMENT (order_id, customer_id, partner_id, payment_mode, shipping_address, order_value, order_date, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
             vals = (order_id, customer_id, partner_id, payment_method, address, total_price, datetime.datetime.now(), 0)
             cursor.execute(query, vals)
 
-            print("here 4")
             # remove from cart
             query = "DELETE FROM CART WHERE customer_id = %s"
             vals = (customer_id,)
@@ -135,6 +132,51 @@ def place_order(customer_id, cart, payment_method, address, total_price):
             print(f"Failed to connect to MySQL: {error}")
 
 # Transaction 4
+def update_product_quantity(product_id, quantity):
+    
+        # start transaction
+        try:
+            
+            db.autocommit = False
+            query = "UPDATE INVENTORY SET quantity_in_stock = %s WHERE product_id = %s"
+            vals = (quantity, product_id)
+            cursor.execute(query, vals)
+            print("Quantity Updated")
+    
+            db.commit()
+        
+        except mysql.connector.Error as error:
+    
+            # Rollback transaction
+            db.rollback()
+            print(f"Failed to connect to MySQL: {error}")
+
+# Transaction 5
+def add_new_product(product_name, product_price, seller_id, category_id, quantity):
+    # start transaction
+    try:
+        db.autocommit = False
+        # add to inventory table
+        query = "INSERT INTO inventory (quantity_in_stock) VALUES (%s)"
+        vals = (quantity,)
+        cursor.execute(query, vals)
+        print("Quantity Updated")
+
+        # add to product table
+        query_insert = """INSERT INTO product (product_name, product_price, seller_id, category_id)
+                            VALUES (%s, %s, %s, %s)"""
+        vals = (product_name, product_price, seller_id, category_id)
+        cursor.execute(query_insert, vals)
+
+        print("Product Added")
+
+        db.commit()
+    
+    except mysql.connector.Error as error:
+
+        # Rollback transaction
+        db.rollback()
+        print(f"Failed to connect to MySQL: {error}")
 
         
 
@@ -702,6 +744,7 @@ def main():
                                 for row in cursor.fetchall():
                                     for x in row:
                                         print(x, end=" ")
+                                    print()
                             except mysql.connector.Error as error:
                                 print(f"Failed to connect to MySQL: {error}")
                         
@@ -759,8 +802,11 @@ def main():
                                     vals = (ord_id,)
                                     try:
                                         cursor.execute(query, vals)
+                                        print("Product ID || Product Name || Quantity")
                                         for row in cursor.fetchall():
-                                            print(row)
+                                            for x in row:
+                                                print(x, end=" ")
+                                            print()
                                     except mysql.connector.Error as error:
                                         print(f"Failed to connect to MySQL: {error}")
                             
@@ -774,8 +820,142 @@ def main():
             
             # Seller
             elif choice_one == 4:
-                print("Welcome!")
+                seller_id = int(input("Enter your Unique Seller ID: "))
+                query = "SELECT * FROM Seller"
+                cursor.execute(query)
 
+                flag = 0
+                for row in cursor.fetchall():
+                    if(row[0] == seller_id):
+                        commission = row[3]
+                        name = row[1]
+                        flag = 1
+                        break
+
+                if flag == 0:
+                    print("Invalid Seller ID")
+                else:
+                    print(f"Welcome {name}")
+                    print(f"Your current commission is {commission}")
+                    while(True):
+                        print("Choose among the following options: ")
+                        print("1. Check your Products and their Stock")
+                        print("2. Add a Product")
+                        print("3. Update a Product if Quantity is less than 10")
+                        print("4. Update a Product if Quantity is more than 10")
+                        print("5. Exit")
+                        seller_choice = int(input("Enter your choice: "))
+
+                        # Check Products and their Stock
+                        if seller_choice == 1:
+                            query = """SELECT 
+                                            p.product_id, 
+                                            p.product_name, 
+                                            p.product_price,  
+                                            i.quantity_in_stock
+                                        FROM product p
+                                        JOIN inventory i ON i.product_id = p.product_id
+                                        WHERE p.seller_id = %s"""
+                            vals = (seller_id,)
+                            try:
+                                cursor.execute(query, vals)
+                                print("Product ID || Product Name || Product Price || Quantity in Stock")
+                                for row in cursor.fetchall():
+                                    for x in row:
+                                        print(x, end=" ")
+                                    print()
+                            except mysql.connector.Error as error:
+                                print(f"Failed to connect to MySQL: {error}")
+                        
+                        # Add a Product
+                        elif seller_choice == 2:
+                            product_name = input("Enter the Product Name: ")
+                            product_price = int(input("Enter the Product Price: "))
+                            category_id = int(input("Enter the Category ID: "))
+                            quantity_in_stock = int(input("Enter the Quantity in Stock: "))
+
+                            add_new_product(product_name, product_price, seller_id, category_id, quantity_in_stock)
+
+                        # Update a Product if Quantity is less than 10
+                        elif seller_choice == 3:
+
+                            # Get Product IDs of products with quantity less than 10
+                            query = """SELECT p.product_id,
+                                            i.quantity_in_stock
+                                        FROM product p
+                                        JOIN inventory i ON i.product_id = p.product_id
+                                        WHERE i.quantity_in_stock < 10 AND p.seller_id = %s"""
+                            vals = (seller_id,)
+                            try:
+                                cursor.execute(query, vals)
+                                print("Product ID || Quantity in Stock")
+                                for row in cursor.fetchall():
+                                    for x in row:
+                                        print(x, end=" ")
+                                    print()
+                            except mysql.connector.Error as error:
+                                print(f"Failed to connect to MySQL: {error}")
+                            
+                            while True:
+                                print("Enter 0 to exit")
+                                print("Enter 1 to update a product")
+                                choice = int(input("Enter your choice: "))
+                                if choice == 0:
+                                    break
+                                elif choice == 1:
+                                    product_id_zero = int(input("Enter the Product ID: "))
+                                    if product_id_zero in cursor.fetchall():
+                                        quantity = int(input("Enter the Quantity: "))
+                                        
+                                        # Implementing Transaction 4
+                                        update_product_quantity(product_id_zero, quantity)
+                                    else:
+                                        print("Invalid Product ID")
+                                else:
+                                    print("Invalid Choice")
+
+                        # Update a Product if Quantity is more than 10
+                        elif seller_choice == 4:
+                                
+                                # Get Product IDs of products with quantity more than 10
+                                query = """SELECT p.product_id
+                                                    i.quantity_in_stock
+                                            FROM product p
+                                            JOIN inventory i ON i.product_id = p.product_id
+                                            WHERE i.quantity_in_stock > 10 AND p.seller_id = %s"""
+                                vals = (seller_id,)
+                                try:
+                                    cursor.execute(query, vals)
+                                    print("Product ID || Quantity in Stock")
+                                    for row in cursor.fetchall():
+                                        for x in row:
+                                            print(x, end=" ")
+                                        print()
+                                except mysql.connector.Error as error:
+                                    print(f"Failed to connect to MySQL: {error}")
+                                
+                                while True:
+                                    print("Enter 0 to exit")
+                                    print("Enter 1 to update a product")
+                                    choice = int(input("Enter your choice: "))
+                                    if choice == 0:
+                                        break
+                                    elif choice == 1:
+                                        product_id_zero = int(input("Enter the Product ID: "))
+                                        if product_id_zero in cursor.fetchall():
+                                            quantity = int(input("Enter the Quantity: "))
+                                            
+                                            # Implementing Transaction 4
+                                            update_product_quantity(product_id_zero, quantity)
+                                        else:
+                                            print("Invalid Product ID")
+                                    else:
+                                        print("Invalid Choice")
+                                
+                        # Exit
+                        else:
+                            break
+                    
         # If the user wants to exit the App
         elif choice == 3:
             break
