@@ -1,6 +1,7 @@
 import mysql.connector
 import pandas as pd
 import datetime 
+from tabulate import tabulate
 
 # Connect to the database
 db = mysql.connector.connect(user='root', password='idonthaveanewpassword@1234',
@@ -156,11 +157,6 @@ def add_new_product(product_name, product_price, seller_id, category_id, quantit
     # start transaction
     try:
         db.autocommit = False
-        # add to inventory table
-        query = "INSERT INTO inventory (quantity_in_stock) VALUES (%s)"
-        vals = (quantity,)
-        cursor.execute(query, vals)
-        print("Quantity Updated")
 
         # add to product table
         query_insert = """INSERT INTO product (product_name, product_price, seller_id, category_id)
@@ -168,7 +164,19 @@ def add_new_product(product_name, product_price, seller_id, category_id, quantit
         vals = (product_name, product_price, seller_id, category_id)
         cursor.execute(query_insert, vals)
 
+        # get the product_id
+        query = "SELECT MAX(product_id) FROM product"
+        cursor.execute(query)
+
+        product_id = cursor.fetchall()[0][0]
         print("Product Added")
+        print("Product ID: ", product_id)
+
+        # add to inventory table
+        query = "INSERT INTO inventory (product_id, quantity_in_stock) VALUES (%s, %s)"
+        vals = (product_id, quantity)
+        cursor.execute(query, vals)
+        print("Quantity Updated")
 
         db.commit()
     
@@ -240,7 +248,7 @@ def main():
                 
                 query = "SELECT * FROM Delivery_Partner"
                 cursor.execute(query)
-                print("Your unique User ID is: ")
+                print("Your unique Partner ID is: ")
                 print(cursor.fetchall()[-1][0])
                 break
             
@@ -263,7 +271,7 @@ def main():
                 
                 query = "SELECT * FROM Seller"
                 cursor.execute(query)
-                print("Your unique User ID is: ")
+                print("Your unique Seller ID is: ")
                 print(cursor.fetchall()[-1][0])
                 break
 
@@ -305,7 +313,10 @@ def main():
                             print("2. View Cart")
                             print("3. Place Order")
                             print("4. Add to Cart")
-                            print("5. Exit")
+                            print("5. Remove from Cart")
+                            print("6. View Orders")
+                            print("7. Rate Delivery Partner")
+                            print("8. Exit")
                             # Need to add option view orders with their status and update rating of delivery partner
 
                             choice_two = int(input("Enter your choice: "))
@@ -313,17 +324,24 @@ def main():
                             # View Products
                             if(choice_two == 1):
                                 while(True):
-                                    print("Choose a category: ")
-                                    print("1. Electronics and Gadgets")
-                                    print("2. Home and Kitchen")
-                                    print("3. Beauty and Personal Care")
-                                    print("4. Toys and Games")
-                                    print("5. Books and Office Supplies")
-                                    print("6. Sports and Fitness")
-                                    print("7. Clothing and Accessories")
+                                    print("Choose one of the following: ")
+                                    query = "SELECT * FROM CATEGORY"
+                                    cursor.execute(query)
+                                    id = []
+                                    name = []
+                                    for row in cursor.fetchall():
+                                        id.append(row[0])
+                                        name.append(row[1])
+
+                                    table_cat = {
+                                        "Category ID" : id,
+                                        "Category Name" : name,
+                                    }
+                                    print(tabulate(table_cat, headers = "keys", tablefmt = "fancy_grid"))
+
                                     choice_two = int(input("Enter your choice: "))
                                     
-                                    if choice_two in [1, 2, 3, 4, 5, 6, 7]:
+                                    if choice_two in range(1, len(id)+1):
                                         break
                                     else:
                                         print("Invalid choice")
@@ -386,10 +404,22 @@ def main():
                                 vals = (customer_id,)
                                 cursor.execute(query, vals)
                                 cart = cursor.fetchall()
-                                print("your cart is:")
-                                df = pd.DataFrame(cart, columns = ['Customer ID', 'Product ID', 'Quantity'])
-                                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                                    print(df)
+                                print("Your Cart is:")
+                                cust_id_arr = []
+                                prod_id_arr = []
+                                quantity_arr = []
+                                for row in cart:
+                                    cust_id_arr.append(row[0])
+                                    prod_id_arr.append(row[1])
+                                    quantity_arr.append(row[2])
+
+                                table_cart = {
+                                    "Customer ID" : cust_id_arr,
+                                    "Product ID" : prod_id_arr,
+                                    "Quantity" : quantity_arr,
+                                }
+                                print(tabulate(table_cart, headers = "keys", tablefmt = "fancy_grid"))
+                            
 
                             # Place Order
                             elif(choice_two == 3):
@@ -498,13 +528,102 @@ def main():
                                         vals = (customer_id, choice_three, quantity)
                                         cursor.execute(query, vals)
                                         db.commit()
-
                                         print("Product added to cart")
-                                        break
+
+                            # Remove from Cart
+                            elif(choice_two == 5):
+                                choice_three = int(input("Enter the Product ID of the product you want to remove from cart: "))
+                                query = "DELETE FROM CART WHERE customer_id = %s AND product_id = %s"
+                                vals = (customer_id, choice_three)
+                                try:
+                                    cursor.execute(query, vals)
+                                    db.commit()
+                                    print("Product removed from cart")
+                                except mysql.connector.Error as err:
+                                    print(err)
+                            
+                            # View Order History
+                            elif(choice_two == 6):
+                                query = "SELECT * FROM order_payment op WHERE op.customer_id = %s"
+                                vals = (customer_id,)
+                                try:
+                                    cursor.execute(query, vals)
+                                    orders = cursor.fetchall()
+                                    ord_id_arr = []
+                                    partner_id_arr = []
+                                    payment_method_arr = []
+                                    address_arr = []
+                                    total_price_arr = []
+                                    date_of_order_arr = []
+                                    order_status_arr = []
+                                    for order in orders:
+                                        ord_id_arr.append(order[0])
+                                        partner_id_arr.append(order[2])
+                                        payment_method_arr.append(order[3])
+                                        address_arr.append(order[4])
+                                        total_price_arr.append(order[5])
+                                        date_of_order_arr.append(order[6])
+                                        order_status_arr.append(order[7])
+                                    
+                                    table_ord_payment = {
+                                        'Order ID': ord_id_arr,
+                                        'Partner ID': partner_id_arr,
+                                        'Payment Method': payment_method_arr,
+                                        'Shipping Address': address_arr,
+                                        'Total Price': total_price_arr,
+                                        'Date of Order': date_of_order_arr,
+                                        'Order Status': order_status_arr
+                                    }
+                                    print(tabulate(table_ord_payment, headers='keys', tablefmt='fancy_grid'))
+                                    
+                                except mysql.connector.Error as err:
+                                    print(err)
+                            
+                            # Rate Delivery Partner
+                            elif(choice_two == 7):
+                                order_id = int(input("Enter the Order ID of the Order you want to rate: "))
+                                rating = int(input("Enter the rating you want to give to the delivery partner out of 10: "))
+                                query = """SELECT op.partner_id FROM order_payment op 
+                                            WHERE op.customer_id = %s AND op.status = 2 AND op.order_id = %s"""
+                                vals = (customer_id, order_id)
+                                cursor.execute(query, vals)
+                                partner_id = cursor.fetchall()
+                                if(len(partner_id) == 0):
+                                    print("Invalid Order ID")
+                                else:
+                                    partner_id = partner_id[0][0]
+                                    
+                                # get number of orders completed by the delivery partner
+                                query_dp = "SELECT * FROM DELIVERY_PARTNER WHERE partner_id = %s"
+                                vals_dp = (partner_id,)
+
+                                cursor.execute(query_dp, vals_dp)
+                                dp = cursor.fetchall()
+                                ord_completed = dp[0][3]
+                                ord_completed = ord_completed - 1
+                                curr_rating = dp[0][4]
+
+                                # update rating of delivery partner
+                                rating = (curr_rating * ord_completed + rating) / (ord_completed + 1)
+
+                                query = "UPDATE DELIVERY_PARTNER SET partner_rating = %s WHERE partner_id = %s"
+                                vals = (rating, partner_id)
+
+                                try:
+                                    db.autocommit = False
+                                    cursor.execute(query, vals)
+                                    db.commit()
+                                    print("Rating updated")
+                                except mysql.connector.Error as err:
+                                    print(err)
+                                    db.rollback()
+                                
 
                             # Exit
-                            elif(choice_two == 5):
+                            elif(choice_two == 8):
                                 break
+                            
+                    # Wrong Password
                     else:
                         print("Wrong Password")
 
@@ -738,13 +857,25 @@ def main():
                                         FROM order_payment op
                                         WHERE op.partner_id = %s AND op.status != 2"""
                             vals = (id,)
-                            print("Order ID || Customer ID || Shipping Address || Order Value")
+                            ord_id_arr = []
+                            cust_id_arr = []
+                            addr_arr = []
+                            val_arr = []
                             try:
                                 cursor.execute(query, vals)
                                 for row in cursor.fetchall():
-                                    for x in row:
-                                        print(x, end=" ")
-                                    print()
+                                    ord_id_arr.append(row[0])
+                                    cust_id_arr.append(row[1])
+                                    addr_arr.append(row[2])
+                                    val_arr.append(row[3])
+
+                                table_ord = {
+                                    'Order ID': ord_id_arr,
+                                    'Customer ID': cust_id_arr,
+                                    'Shipping Address': addr_arr,
+                                    'Order Value': val_arr
+                                }
+                                print(tabulate(table_ord, headers='keys', tablefmt='fancy_grid'))
                             except mysql.connector.Error as error:
                                 print(f"Failed to connect to MySQL: {error}")
                         
@@ -802,11 +933,23 @@ def main():
                                     vals = (ord_id,)
                                     try:
                                         cursor.execute(query, vals)
-                                        print("Product ID || Product Name || Quantity")
+
+                                        # Tabulate the results
+                                        prod_id_arr = []
+                                        prod_name_arr = []
+                                        quantity_arr = []
                                         for row in cursor.fetchall():
-                                            for x in row:
-                                                print(x, end=" ")
-                                            print()
+                                            prod_id_arr.append(row[0])
+                                            prod_name_arr.append(row[1])
+                                            quantity_arr.append(row[2])
+                                        
+                                        table_prod = {
+                                            'Product ID': prod_id_arr,
+                                            'Product Name': prod_name_arr,
+                                            'Quantity': quantity_arr
+                                        }
+                                        print(tabulate(table_prod, headers="keys", tablefmt="fancy_grid"))
+                                        
                                     except mysql.connector.Error as error:
                                         print(f"Failed to connect to MySQL: {error}")
                             
@@ -859,11 +1002,25 @@ def main():
                             vals = (seller_id,)
                             try:
                                 cursor.execute(query, vals)
-                                print("Product ID || Product Name || Product Price || Quantity in Stock")
+                                prod_id_arr = []
+                                prod_name_arr = []
+                                prod_price_arr = [] 
+                                quantity_arr = [] 
+
                                 for row in cursor.fetchall():
-                                    for x in row:
-                                        print(x, end=" ")
-                                    print()
+                                    prod_id_arr.append(row[0])
+                                    prod_name_arr.append(row[1])
+                                    prod_price_arr.append(row[2])
+                                    quantity_arr.append(row[3])
+
+                                table_prod = {
+                                    'Product ID': prod_id_arr,
+                                    'Product Name': prod_name_arr,
+                                    'Product Price': prod_price_arr,
+                                    'Quantity in Stock': quantity_arr
+                                }    
+
+                                print(tabulate(table_prod, headers='keys', tablefmt='fancy_grid'))
                             except mysql.connector.Error as error:
                                 print(f"Failed to connect to MySQL: {error}")
                         
@@ -876,23 +1033,32 @@ def main():
 
                             add_new_product(product_name, product_price, seller_id, category_id, quantity_in_stock)
 
-                        # Update a Product if Quantity is less than 10
+                        # Update a Product if Quantity is less than or equal to 10
                         elif seller_choice == 3:
 
-                            # Get Product IDs of products with quantity less than 10
+                            # Get Product IDs of products with quantity less than or equal to 10
                             query = """SELECT p.product_id,
-                                            i.quantity_in_stock
+                                                i.quantity_in_stock
                                         FROM product p
                                         JOIN inventory i ON i.product_id = p.product_id
-                                        WHERE i.quantity_in_stock < 10 AND p.seller_id = %s"""
+                                        WHERE i.quantity_in_stock <= 10 AND p.seller_id = %s"""
                             vals = (seller_id,)
                             try:
                                 cursor.execute(query, vals)
-                                print("Product ID || Quantity in Stock")
+                                prod_id_arr = []
+                                quantity_arr = [] 
+
                                 for row in cursor.fetchall():
-                                    for x in row:
-                                        print(x, end=" ")
-                                    print()
+                                    prod_id_arr.append(row[0])
+                                    quantity_arr.append(row[1])
+
+                                table_prod = {
+                                    'Product ID': prod_id_arr,
+                                    'Quantity in Stock': quantity_arr
+                                }    
+
+                                print(tabulate(table_prod, headers='keys', tablefmt='fancy_grid'))
+
                             except mysql.connector.Error as error:
                                 print(f"Failed to connect to MySQL: {error}")
                             
@@ -904,7 +1070,8 @@ def main():
                                     break
                                 elif choice == 1:
                                     product_id_zero = int(input("Enter the Product ID: "))
-                                    if product_id_zero in cursor.fetchall():
+
+                                    if product_id_zero in prod_id_arr:
                                         quantity = int(input("Enter the Quantity: "))
                                         
                                         # Implementing Transaction 4
@@ -918,7 +1085,7 @@ def main():
                         elif seller_choice == 4:
                                 
                                 # Get Product IDs of products with quantity more than 10
-                                query = """SELECT p.product_id
+                                query = """SELECT p.product_id,
                                                     i.quantity_in_stock
                                             FROM product p
                                             JOIN inventory i ON i.product_id = p.product_id
@@ -926,11 +1093,19 @@ def main():
                                 vals = (seller_id,)
                                 try:
                                     cursor.execute(query, vals)
-                                    print("Product ID || Quantity in Stock")
+                                    prod_id_arr = []
+                                    quantity_arr = [] 
+
                                     for row in cursor.fetchall():
-                                        for x in row:
-                                            print(x, end=" ")
-                                        print()
+                                        prod_id_arr.append(row[0])
+                                        quantity_arr.append(row[1])
+
+                                    table_prod = {
+                                        'Product ID': prod_id_arr,
+                                        'Quantity in Stock': quantity_arr
+                                    }    
+
+                                    print(tabulate(table_prod, headers='keys', tablefmt='fancy_grid'))
                                 except mysql.connector.Error as error:
                                     print(f"Failed to connect to MySQL: {error}")
                                 
@@ -942,7 +1117,8 @@ def main():
                                         break
                                     elif choice == 1:
                                         product_id_zero = int(input("Enter the Product ID: "))
-                                        if product_id_zero in cursor.fetchall():
+
+                                        if product_id_zero in prod_id_arr:
                                             quantity = int(input("Enter the Quantity: "))
                                             
                                             # Implementing Transaction 4
