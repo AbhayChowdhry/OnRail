@@ -4,11 +4,8 @@ import datetime
 from tabulate import tabulate
 
 # Connect to the database
-db = mysql.connector.connect(user='root', password='idonthaveanewpassword@1234',
+db = mysql.connector.connect(user='root', password=password,
                             host='localhost', database='Online_Retail_Store')
-
-# abhay password : Dbm5_098
-# arnav password : idonthaveanewpassword@1234
 
 cursor = db.cursor()
 
